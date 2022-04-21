@@ -2,6 +2,8 @@ var selectedChar = null;
 var WelcomePercentage = "30vh"
 qbMultiCharacters = {}
 var Loaded = false;
+var NChar = null;
+var EnableDeleteButton = false;
 var background = document.getElementById("musica_fondo");
 var confirmar = document.getElementById("click");
 var consejoAud = document.getElementById("click");
@@ -13,8 +15,9 @@ var over_button = document.getElementById("click");
 $(document).ready(function (){
     window.addEventListener('message', function (event) {
         var data = event.data;
-
         if (data.action == "ui") {
+			NChar = data.nChar;
+            EnableDeleteButton = data.enableDeleteButton;
             if (data.toggle) {
                 $('.container').show();
                 $('.jugadores-on').hide();
@@ -28,26 +31,26 @@ $(document).ready(function (){
                 $(".welcomescreen").fadeIn(150);
                 qbMultiCharacters.resetAll();
 
-                var originalText = "Recuperando datos del jugador";
+                var originalText = "Retrieving player data";
                 var loadingProgress = 0;
                 var loadingDots = 0;
                 $("#loading-text").html(originalText);
-
+                
                 $('.fondocolor').show();
                 var DotsInterval = setInterval(function() {
                     $("#loading-text").append(".");
                     loadingDots++;
                     loadingProgress++;
                     if (loadingProgress == 3) {
-                        originalText = "Validando los datos del jugador"
+                        originalText = "Validating player data"
                         $("#loading-text").html(originalText);
                     }
                     if (loadingProgress == 4) {
-                        originalText = "Recuperando personajes"
+                        originalText = "Retrieving characters"
                         $("#loading-text").html(originalText);
                     }
                     if (loadingProgress == 6) {
-                        originalText = "Validando caracteres"
+                        originalText = "Validating characters"
                         $("#loading-text").html(originalText);
                     }
                     if(loadingDots == 4) {
@@ -56,13 +59,13 @@ $(document).ready(function (){
                     }
                 }, 3000);
 
-                refreshCharacters()
                 setTimeout(function(){
+					setCharactersList()
                     $.post('https://qb-multicharacter/setupCharacters');
                     setTimeout(function(){
                         clearInterval(DotsInterval);
                         loadingProgress = 0;
-                        originalText = "Recuperando datos";
+                        originalText = "Retrieving data";
                         $(".welcomescreen").fadeOut(2000);
                         $('.imagenlogo').addClass('entrada');
                         $(".title-screen").fadeIn(100);
@@ -97,9 +100,11 @@ $(document).ready(function (){
                 qbMultiCharacters.resetAll();
             }
         }
+
         if (data.action == "setupCharacters") {
             setupCharacters(event.data.characters)
         }
+
         if (data.action == "setupCharInfo") {
             setupCharInfo(event.data.chardata)
         }
@@ -110,13 +115,13 @@ $(document).ready(function (){
     $('.datepicker').datepicker();
 });
 
-
 $('.continue-btn').click(function(e){
     e.preventDefault();
 });
 
 $('.disconnect-btn').click(function(e){
     e.preventDefault();
+
     $.post('https://qb-multicharacter/closeUI');
     $.post('https://qb-multicharacter/disconnectButton');
 });
@@ -181,7 +186,7 @@ $(document).on('click', '.character', function(e) {
         if ((selectedChar).data('cid') == "") {
             $(selectedChar).addClass("char-selected");
             setupCharInfo('empty')
-            $("#play-text").html("Crear");
+            $("#play-text").html("Create");
             $("#play").css({"display":"block"});
             $("#delete").css({"display":"none"});
             $.post('https://qb-multicharacter/cDataPed', JSON.stringify({
@@ -193,7 +198,9 @@ $(document).on('click', '.character', function(e) {
             $("#play-text").html('<i class="fa fa-sign-in" aria-hidden="true"></i> Play');
             $("#delete-text").html('<i class="fa fa-trash" aria-hidden="true"></i> Delete');
             $("#play").css({"display":"block"});
-            $("#delete").css({"display":"block"});
+            if (EnableDeleteButton) {
+                $("#delete").css({"display":"block"});
+            }
             $.post('https://qb-multicharacter/cDataPed', JSON.stringify({
                 cData: cDataPed
             }));
@@ -216,7 +223,9 @@ $(document).on('click', '.character', function(e) {
             $("#play-text").html('<i class="fa fa-sign-in" aria-hidden="true"></i> Play');
             $("#delete-text").html('<i class="fa fa-trash" aria-hidden="true"></i> Delete');
             $("#play").css({"display":"block"});
-            $("#delete").css({"display":"block"});
+            if (EnableDeleteButton) {
+                $("#delete").css({"display":"block"});
+            }
             $.post('https://qb-multicharacter/cDataPed', JSON.stringify({
                 cData: cDataPed
             }));
@@ -242,36 +251,51 @@ function escapeHtml(string) {
 }
 function hasWhiteSpace(s) {
     return /\s/g.test(s);
-  }
+}
+
+$('#nationality').keyup(function() {
+    var nationalityValue = $(this).val();
+    if(nationalityValue.indexOf(' ') !== -1) {
+        $(this).val(nationalityValue.replace(' ', ''))
+    }
+});
+
 $(document).on('click', '#create', function (e) {
     e.preventDefault();
-   
-        let firstname= escapeHtml($('#first_name').val())
-        let lastname= escapeHtml($('#last_name').val())
-        let nationality= escapeHtml($('#nationality').val())
-        let birthdate= escapeHtml($('#birthdate').val())
-        let gender= escapeHtml($('select[name=gender]').val())
-        let cid = escapeHtml($(selectedChar).attr('id').replace('char-', ''))
-        
+
+    let firstname= escapeHtml($('#first_name').val())
+    let lastname= escapeHtml($('#last_name').val())
+    let nationality= escapeHtml($('#nationality').val())
+    let birthdate= escapeHtml($('#birthdate').val())
+    let gender= escapeHtml($('select[name=gender]').val())
+    let cid = escapeHtml($(selectedChar).attr('id').replace('char-', ''))
+    const regTest = new RegExp(profList.join('|'), 'i');
     //An Ugly check of null objects
 
     if (!firstname || !lastname || !nationality || !birthdate || hasWhiteSpace(firstname) || hasWhiteSpace(lastname)|| hasWhiteSpace(nationality) ){
-    console.log("FIELDS REQUIRED")
-    }else{
-        $.post('https://qb-multicharacter/createNewCharacter', JSON.stringify({
-            firstname: firstname,
-            lastname: lastname,
-            nationality: nationality,
-            birthdate: birthdate,
-            gender: gender,
-            cid: cid,
-        }));
-        $(".container").fadeOut(150);
-        $('.characters-list').css("filter", "none");
-        $('.character-info').css("filter", "none");
-        qbMultiCharacters.fadeOutDown('.character-register', '125%', 400);
-        refreshCharacters()
+        console.log("FIELDS REQUIRED")
+        return false;
     }
+
+    if(regTest.test(firstname) || regTest.test(lastname)){
+        console.log("ERROR: You used a derogatory/vulgar term. Please try again!")
+        return false;
+    }
+
+    $.post('https://qb-multicharacter/createNewCharacter', JSON.stringify({
+        firstname: firstname,
+        lastname: lastname,
+        nationality: nationality,
+        birthdate: birthdate,
+        gender: gender,
+        cid: cid,
+    }));
+    $(".container").fadeOut(150);
+    $('.characters-list').css("filter", "none");
+    $('.character-info').css("filter", "none");
+    qbMultiCharacters.fadeOutDown('.character-register', '125%', 400);
+    refreshCharacters()
+
 });
 
 $(document).on('click', '#accept-delete', function(e){
@@ -289,8 +313,24 @@ $(document).on('click', '#cancel-delete', function(e){
     $('.character-delete').fadeOut(150);
 });
 
+function setCharactersList() {
+    var htmlResult = '<div class="character-list-header"><p>My Characters</p></div>'
+    for (let i = 1; i <= NChar; i++) {
+        htmlResult += '<div class="character" id="char-'+ i +'" data-cid=""><span id="slot-name">Empty Slot<span id="cid"></span></span></div>'
+    }
+    htmlResult += '<div class="character-btn" id="play"><p id="play-text">Select a character</p></div><div class="character-btn" id="delete"><p id="delete-text">Select a character</p></div>'
+    $('.characters-list').html(htmlResult)
+}
+
 function refreshCharacters() {
-    $('.characters-list').html('<div class="character" id="char-1" data-cid=""><span id="slot-name">Empty Slot<span id="cid"></span></span></div><div class="character" id="char-2" data-cid=""><span id="slot-name">Empty Slot<span id="cid"></span></span></div><div class="character" id="char-3" data-cid=""><span id="slot-name">Empty Slot<span id="cid"></span></span></div><div class="character" id="char-4" data-cid=""><span id="slot-name">Empty Slot<span id="cid"></span></span></div><div class="character" id="char-5" data-cid=""><span id="slot-name">Empty Slot<span id="cid"></span></span></div><div class="character-btn" id="play"><p id="play-text">Select a character</p></div><div class="character-btn" id="delete"><p id="delete-text">Select a character</p></div>')
+    var htmlResult = ''
+    for (let i = 1; i <= NChar; i++) {
+        htmlResult += '<div class="character" id="char-'+ i +'" data-cid=""><span id="slot-name">Empty Slot<span id="cid"></span></span></div>'
+    }
+
+    htmlResult += '<div class="character-btn" id="play"><p id="play-text">Select a character</p></div><div class="character-btn" id="delete"><p id="delete-text">Select a character</p></div>'
+    $('.characters-list').html(htmlResult)
+    
     setTimeout(function(){
         $(selectedChar).removeClass("char-selected");
         selectedChar = null;
@@ -392,6 +432,7 @@ qbMultiCharacters.resetAll = function() {
     $(".fondo-negro").fadeIn(0);
     $('.server-log').show();
     $('.server-log').css("top", "25%");
+    selectedChar = null;
 }
 
 function musicFadeOut() {
