@@ -1,5 +1,7 @@
 # qb-multicharacter
-qb-multicharacter design
+qb-multicharacter design updated for newest qbcore (Date of update: 25.05.2023)
+
+Updated by Metalholt#1942
 
 # Simple cool design for qb-multicharacter
 Preview:
@@ -14,3 +16,5 @@ Images:
 # Also you have the qb-spawn design
 
 https://github.com/marcostom32/qb-spawn
+
+
