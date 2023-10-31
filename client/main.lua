@@ -123,6 +123,9 @@ RegisterNUICallback('selectCharacter', function(data, cb)
     DoScreenFadeOut(10)
     TriggerServerEvent('qb-multicharacter:server:loadUserData', cData)
     openCharMenu(false)
+    SendNUIMessage({
+        action = "stopMusic"
+    })
     SetEntityAsMissionEntity(charPed, true, true)
     DeleteEntity(charPed)
     cb("ok")
