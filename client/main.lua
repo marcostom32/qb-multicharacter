@@ -108,6 +108,9 @@ end)
 
 RegisterNUICallback('closeUI', function(_, cb)
     openCharMenu(false)
+    SendNUIMessage({
+        action = "stopMusic"
+    })
     cb("ok")
 end)
 
@@ -121,6 +124,7 @@ end)
 RegisterNUICallback('selectCharacter', function(data, cb)
     local cData = data.cData
     DoScreenFadeOut(10)
+    cData.isNew = false
     TriggerServerEvent('qb-multicharacter:server:loadUserData', cData)
     openCharMenu(false)
     SendNUIMessage({
@@ -242,7 +246,11 @@ RegisterNUICallback('createNewCharacter', function(data, cb)
     elseif cData.gender == Lang:t("ui.female") then
         cData.gender = 1
     end
+    cData.isNew = true
     TriggerServerEvent('qb-multicharacter:server:createCharacter', cData)
+    SendNUIMessage({
+        action = "stopMusic"
+    })
     Wait(500)
     cb("ok")
 end)
