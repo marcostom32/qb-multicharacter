@@ -31,7 +31,8 @@ files {
 
 dependencies {
     'qb-core',
-    'qb-spawn'
+    'qb-spawn',
+    'qb-houses'
 }
 
 lua54 'yes'
